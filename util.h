@@ -1,3 +1,5 @@
+#ifndef UTIL_H
+#define UTIL_H
 #include <stdio.h>
 #include "constants.h"
 
@@ -32,13 +34,45 @@ void rotateColumn(unsigned char* arr) {
   arr[12] = temp;
 }
 
-void scheduleKey(unsigned char* current) {
+/* Substitute the bytes in a column, rather than row order */
+void subColumnBytes(unsigned char* state) {
+  for (int i = 0; i < CHUNK_SIZE; i+=4) {
+    int left = state[i] >> 4;
+    int right = state[i] & 0x0F;
+    state[i] = sbox[right + (left * 16)];
+  }
+}
 
+void nextRoundKey(unsigned char* key, int round) {
+  unsigned char newKey[CHUNK_SIZE];
+  for (int i = 0; i < CHUNK_SIZE; i++) {
+    newKey[i] = key[i];
+  }
+  newKey[0] = key[3];
+  newKey[4] = key[7];
+  newKey[8] = key[11];
+  newKey[12] = key[15];
+  rotateColumn(newKey);
+  subColumnBytes(newKey);
+  newKey[0] ^= rcon[round+1];
+  newKey[0] ^= key[0];
+  newKey[4] ^= key[4];
+  newKey[8] ^= key[8];
+  newKey[12] ^= key[12];
+  for (int i = 1; i < 4; i++) {
+    newKey[i] = newKey[i-1] ^ key[i];
+    newKey[i+4] = newKey[i+3] ^ key[i+4];
+    newKey[i+8] = newKey[i+7] ^ key[i+8];
+    newKey[i+12] = newKey[i+11] ^ key[i+12];
+  }
+  for (int i = 0; i < CHUNK_SIZE; i++) {
+    key[i] = newKey[i];
+  }
 }
 
 /* Substitute the bytes in the array for the appropriate replacement from the sbox */
-void subBytes(unsigned char* state, int length) {
-  for (int i = 0; i < length; i++) {
+void subBytes(unsigned char* state) {
+  for (int i = 0; i < CHUNK_SIZE; i++) {
     int left = state[i] >> 4;
     int right = state[i] & 0x0F;
     state[i] = sbox[right + (left * 16)];
@@ -87,3 +121,5 @@ void addRoundKey(unsigned char* state, unsigned char* key) {
     state[i] = state[i] ^ key[i];
   }
 }
+
+#endif
