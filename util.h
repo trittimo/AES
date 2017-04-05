@@ -3,9 +3,6 @@
 #include <stdio.h>
 #include "constants.h"
 
-/* ============== CONSTANTS ============== */
-#define CHUNK_SIZE 16
-
 /* ============== FUNCTIONS ============== */
 void writeOutput(FILE* stream, unsigned char* state) {
   for (int i = 0; i < CHUNK_SIZE; i++) {
@@ -43,6 +40,7 @@ void subColumnBytes(unsigned char* state) {
   }
 }
 
+/* Gets the next round key given the round we're on */
 void nextRoundKey(unsigned char* key, int round) {
   unsigned char newKey[CHUNK_SIZE];
   for (int i = 0; i < CHUNK_SIZE; i++) {

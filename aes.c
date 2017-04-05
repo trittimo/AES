@@ -1,3 +1,12 @@
+/*
+  Program written by Michael Trittin
+  A few notes:
+  - The majority of work happens in the functions defined in util.h
+  - Constants (such as sbox, rcon, etc.) were taken from Wikipedia
+  - Debug printing can be toggled by defining the DEBUG macro -- this is done in the
+    make file, so it shouldn't be necessary to do so manually
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "aes.h"
@@ -56,23 +65,33 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 16; i++) {
     fprintf(out, "%02x", input[i]);
   }
+
+  // We're ready to begin encryption
   fprintf(out, "\n******** BEGIN ENCRYPTION ********");
 
+
+  // Set up some variables we can store the transformed data in
   unsigned char state[16];
   unsigned char mykey[16];
   unsigned char plaintext[16];
   unsigned char original[16];
 
+  // Copy the state and key in via column order
   readColumnOrder(state, input);
   readColumnOrder(mykey, key);
 
+  // Save the plaintext and original key for later use
   for (int i = 0; i < 16; i++) {
     plaintext[i] = state[i];
     original[i] = mykey[i];
   }
 
+  // For the number of iterations, do the encryption
   for (int j = 0; j < iterations; j++) {
     encrypt(state, mykey, rounds, out);
+
+    // The state is xor'd with the plaintext if it's not the last iteration
+    // We also revert the key to its original state
     if (j != iterations-1) {
       for (int i = 0; i < 16; i++) {
         state[i] ^= plaintext[i];
@@ -81,6 +100,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  // Finished encrypting, printing the final state
   fprintf(out, "\n********  END ENCRYPTION  ********\nFinal block:\n");
   for (int i = 0; i < 4; i++) {
     fprintf(out, "%02x", state[i]);
@@ -94,6 +114,7 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
+/* Reads the given input array column-major order into the destination array */
 void readColumnOrder(unsigned char* dest, unsigned char* in) {
   for (int i = 0; i < 4; i++) {
     dest[i] = in[i*4];
@@ -103,6 +124,10 @@ void readColumnOrder(unsigned char* dest, unsigned char* in) {
   }
 }
 
+/* 
+  Does the actual encryption given the state, key, and number of rounds to perform
+  If debug is on, will print out each step along the way as well
+*/
 void encrypt(unsigned char* state, unsigned char* key, int rounds, FILE* out) {
   print(out, "\nInput key\n", key);
   print(out, "\n\nInput block\n", state)
@@ -110,26 +135,47 @@ void encrypt(unsigned char* state, unsigned char* key, int rounds, FILE* out) {
   // Initial round
   addRoundKey(state, key);
   print(out, "\n\nInitial AddRoundKey\n", state);
+
   for (int i = 0; i < rounds-1; i++) {
     printformatif(out, "\n\nRound %d\n", i + 1);
+
+    // SubBytes
     subBytes(state);
     print(out, "SubBytes\n", state);
+
+    // ShiftRows
     shiftRows(state);
     print(out, "\n\nShiftRows\n", state);
+
+    // MixColumns
     mixColumns(state);
     print(out, "\n\nMixColumns\n", state);
+
+    // Get the next round key
     nextRoundKey(key, i);
     print(out, "\n\nRound Key\n", key);
+
+    // AddRoundKey
     addRoundKey(state, key);
     print(out, "\n\nAddRoundKey\n", state);
   }
+
+  // The final round
   printif(out, "\n\nFinal Round\n");
+
+  // SubBytes
   subBytes(state);
   print(out, "SubBytes\n", state);
+
+  // ShiftRows
   shiftRows(state);
   print(out, "\n\nShiftRows\n", state);
+
+  // Get the next round key
   nextRoundKey(key, rounds-1);
   print(out, "\n\nRound Key\n", key);
+
+  // AddRoundKey
   addRoundKey(state, key);
   print(out, "\n\nAddRoundKey\n", state);
 }
