@@ -1,7 +1,0 @@
-Number of iterations: 2
-Number of rounds: 10
-Key: 2b28ab97eaef7cf15d2154f16a6883c
-Plaintext: 328831e0435a3137f630987a88da234
-****** BEGIN ENCRYPTION ******
-****** END ENCRYPTION ******
-Final block: 10400cdd0efdae1307fff00400c9004007300efdae2107fff00
